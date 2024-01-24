@@ -1,2 +1,2 @@
 # smartassets
-A smart contract developed by Akemona for the creation and management of tokenized securities under SEC regulations in the United States.
+Smart contracts developed by Akemona for the creation and management of tokenized securities under United States Securities and Exchange Commission regulations.
