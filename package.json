@@ -1,0 +1,32 @@
+{
+  "name": "akemona-smartassets",
+  "version": "0.0.1",
+  "description": "Smart contracts developed by Akemona for the creation and management of tokenized securities under SEC regulations in the United States.",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile"
+  },
+  "author": "akemona",
+  "license": "Unlicense",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "4.0.0",
+    "@nomicfoundation/hardhat-toolbox-viem": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/hardhat-viem": "^1.0.0",
+    "@openzeppelin/contracts": "5.0.1",
+    "@types/chai": "^4.2.0",
+    "@types/chai-as-promised": "^7.1.6",
+    "@types/mocha": ">=9.1.0",
+    "@types/node": ">=16.0.0",
+    "chai": "^4.2.0",
+    "hardhat": "^2.14.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.0",
+    "ts-node": "10.9.2",
+    "typescript": "~5.3.3",
+    "viem": "^1.15.1"
+  },
+  "packageManager": "yarn@4.1.0"
+}
