@@ -2,16 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract AkemonaERC20Perk is
-    ERC20,
-    ERC20Burnable,
-    ERC20Pausable,
-    AccessControl
-{
+contract AkemonaERC20Perk is ERC20, ERC20Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -65,6 +59,19 @@ contract AkemonaERC20Perk is
         require(amount != 0, "Amount is zero");
         _mint(to, amount);
     }
+
+    /**
+     * @dev Destroys a `value` amount of tokens from `account` - could be used after redeem
+     *
+     * See {ERC20-_burn} and {ERC20-allowance}.
+     *
+     * Requirements:
+     *
+     * - Only account with admin role can take this action.
+     */
+    /* function burnFromAdmin(address account, uint256 value) public virtual {
+        _burn(account, value);
+    } */
 
     function maxSupply() public view returns (uint256) {
         return _maxSupply;
