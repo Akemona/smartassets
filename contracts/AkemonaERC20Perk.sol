@@ -31,6 +31,10 @@ contract AkemonaERC20Perk is ERC20, ERC20Pausable, AccessControl {
         _unpause();
     }
 
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
+
     // Distributes tokens to multiple wallet addresses at once - admin only
     function distributeTokens(
         address[] calldata toAddresses,
