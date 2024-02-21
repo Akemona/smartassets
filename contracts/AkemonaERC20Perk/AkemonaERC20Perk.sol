@@ -189,6 +189,9 @@ contract AkemonaERC20Perk is
      * @param amount number of tokens to redeem
      */
     function redeemInUSDC(uint256 amount) public returns (bool) {
+        if (_paymentWallet == address(0)) {
+            revert AkemonaRedeemNotSupported();
+        }
         uint256 currentBalance = ERC20.balanceOf(msg.sender);
         if (currentBalance < amount) {
             revert AkemonaNotEnoughBalance(amount, currentBalance);

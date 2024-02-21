@@ -67,4 +67,9 @@ interface IAkemonaContractErrors {
         address walletAddress,
         uint256 timeDifference
     );
+
+    /**
+     * @dev redeem not supported if payment wallet is zero address
+     */
+    error AkemonaRedeemNotSupported();
 }
