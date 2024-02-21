@@ -65,6 +65,12 @@ contract AkemonaERC20Perk is
         return 6;
     }
 
+    function getWhitelistedTimestamp(
+        address wallet
+    ) public view returns (uint256) {
+        return whitelistedAddresses[wallet];
+    }
+
     /**
      * @dev Adds new verified addresses (admin only)
      *
