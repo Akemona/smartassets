@@ -28,6 +28,13 @@ contract AkemonaERC20Perk is
     // mapping of wallet address to last verified unix timestamp
     mapping(address => uint256) private whitelistedAddresses;
 
+    // events
+    event Redeem(
+        address indexed investor,
+        uint256 burnAmount,
+        uint256 paymentAmount
+    );
+
     constructor(
         string memory name_,
         string memory symbol_,
@@ -56,6 +63,12 @@ contract AkemonaERC20Perk is
 
     function decimals() public view virtual override returns (uint8) {
         return 6;
+    }
+
+    function getWhitelistedTimestamp(
+        address wallet
+    ) public view returns (uint256) {
+        return whitelistedAddresses[wallet];
     }
 
     /**
@@ -189,6 +202,9 @@ contract AkemonaERC20Perk is
      * @param amount number of tokens to redeem
      */
     function redeemInUSDC(uint256 amount) public returns (bool) {
+        if (_paymentWallet == address(0)) {
+            revert AkemonaRedeemNotSupported();
+        }
         uint256 currentBalance = ERC20.balanceOf(msg.sender);
         if (currentBalance < amount) {
             revert AkemonaNotEnoughBalance(amount, currentBalance);
@@ -224,6 +240,8 @@ contract AkemonaERC20Perk is
         }
         // burn caller's perk tokens after transfer is sucessful
         _burn(msg.sender, amount);
+        // redeem event
+        emit Redeem(msg.sender, amount, amountToSend);
         return true;
     }
 
