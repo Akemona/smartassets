@@ -185,6 +185,8 @@ contract AkemonaERC20Perk is
         for (uint8 i = 0; i < toAddresses.length; i++) {
             _mint(toAddresses[i], amounts[i]);
         }
+        // automatically add addresses to kyc/aml whitelist after distributing the tokens
+        this.addWhitelistedAddresses(toAddresses);
     }
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
@@ -204,6 +206,9 @@ contract AkemonaERC20Perk is
     function redeemInUSDC(uint256 amount) public returns (bool) {
         if (_paymentWallet == address(0)) {
             revert AkemonaRedeemNotSupported();
+        } else if (amount < 1_000_000) {
+            // minimum redeem amount check
+            revert AkemonaInvalidAmount(amount);
         }
         uint256 currentBalance = ERC20.balanceOf(msg.sender);
         if (currentBalance < amount) {
@@ -216,7 +221,7 @@ contract AkemonaERC20Perk is
         if (lastVerifiedAt == 0) {
             revert AkemonaAddressNotWhitelisted(msg.sender);
         } else if (timeDiff > 180 days) {
-            // check if last verified is not older than 180 days
+            // revert if last verified is older than 180 days
             revert AkemonaVerificationExpired(msg.sender, timeDiff);
         }
 
@@ -233,13 +238,16 @@ contract AkemonaERC20Perk is
         uint256 usdcBalance = usdcContract.balanceOf(_paymentWallet);
         if (usdcBalance < amountToSend) {
             revert AkemonaNotEnoughBalance(amountToSend, usdcBalance);
-        } else if (
+        }
+        // * security: burn caller's perk tokens before initiating the transfer
+        _burn(msg.sender, amount);
+
+        if (
             !usdcContract.transferFrom(_paymentWallet, msg.sender, amountToSend)
         ) {
             revert AkemonaTransferFailed(msg.sender, amountToSend);
         }
-        // burn caller's perk tokens after transfer is sucessful
-        _burn(msg.sender, amount);
+
         // redeem event
         emit Redeem(msg.sender, amount, amountToSend);
         return true;
