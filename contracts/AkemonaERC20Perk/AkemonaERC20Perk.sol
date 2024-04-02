@@ -85,16 +85,7 @@ contract AkemonaERC20Perk is
         if (_addresses.length > MAX_BATCH_SIZE) {
             revert AkemonaInputExceedsMax(_addresses.length, MAX_BATCH_SIZE);
         }
-        for (uint8 i = 0; i < _addresses.length; i++) {
-            if (_addresses[i] == address(0)) {
-                revert AkemonaInvalidAddress(address(0));
-            } else if (whitelistedAddresses[_addresses[i]] > 0) {
-                // skip if already whitelisted
-                continue;
-            }
-            // set last verified timestamp
-            whitelistedAddresses[_addresses[i]] = block.timestamp;
-        }
+        _addWhitelistAddresses(_addresses);
         return true;
     }
 
@@ -112,6 +103,34 @@ contract AkemonaERC20Perk is
         if (_addresses.length > MAX_BATCH_SIZE) {
             revert AkemonaInputExceedsMax(_addresses.length, MAX_BATCH_SIZE);
         }
+        _removeWhitelistAddresses(_addresses);
+        return true;
+    }
+
+    /**
+     * @dev adds specified verified addresses in whitelist - internal
+     *
+     * @param _addresses - address list
+     */
+    function _addWhitelistAddresses(address[] memory _addresses) internal {
+        for (uint8 i = 0; i < _addresses.length; i++) {
+            if (_addresses[i] == address(0)) {
+                revert AkemonaInvalidAddress(address(0));
+            } else if (whitelistedAddresses[_addresses[i]] > 0) {
+                // skip if already whitelisted
+                continue;
+            }
+            // set last verified timestamp
+            whitelistedAddresses[_addresses[i]] = block.timestamp;
+        }
+    }
+
+    /**
+     * @dev removes specified verified addresses in whitelist - internal
+     *
+     * @param _addresses - address list
+     */
+    function _removeWhitelistAddresses(address[] memory _addresses) internal {
         for (uint8 i = 0; i < _addresses.length; i++) {
             if (_addresses[i] == address(0)) {
                 revert AkemonaInvalidAddress(address(0));
@@ -121,7 +140,6 @@ contract AkemonaERC20Perk is
             }
             delete whitelistedAddresses[_addresses[i]]; // sets zero
         }
-        return true;
     }
 
     /**
@@ -186,7 +204,7 @@ contract AkemonaERC20Perk is
             _mint(toAddresses[i], amounts[i]);
         }
         // automatically add addresses to kyc/aml whitelist after distributing the tokens
-        this.addWhitelistedAddresses(toAddresses);
+        _addWhitelistAddresses(toAddresses);
     }
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
