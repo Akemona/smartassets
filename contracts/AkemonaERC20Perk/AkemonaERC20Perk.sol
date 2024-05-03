@@ -207,6 +207,11 @@ contract AkemonaERC20Perk is
         _addWhitelistAddresses(toAddresses);
     }
 
+    /**
+     * @dev mints new perk tokens
+     * @param to to address
+     * @param amount number of tokens
+     */
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         require(ERC20.totalSupply() + amount <= _maxSupply, "Out of stock");
         if (amount == 0) {
@@ -215,6 +220,20 @@ contract AkemonaERC20Perk is
             revert AkemonaInvalidAddress(address(0));
         }
         _mint(to, amount);
+    }
+
+    /**
+     * @dev updates the payment wallet
+     * @param newAddress to address
+     */
+    function updatePaymentWallet(
+        address newAddress
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        if (newAddress == address(0)) {
+            revert AkemonaInvalidAddress(address(0));
+        }
+        _paymentWallet = newAddress;
+        return true;
     }
 
     /**
