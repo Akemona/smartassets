@@ -23,6 +23,7 @@ contract AkemonaERC20Perk is
 
     address private _usdc;
     address private _paymentWallet;
+    uint256 private _totalBurn;
     IERC20 private usdcContract;
 
     // mapping of wallet address to last verified unix timestamp
@@ -63,6 +64,13 @@ contract AkemonaERC20Perk is
 
     function decimals() public view virtual override returns (uint8) {
         return 6;
+    }
+
+    /**
+     * @dev Total number of burned/redeemed tokens
+     */
+    function totalBurn() public view virtual returns (uint256) {
+        return _totalBurn;
     }
 
     function getWhitelistedTimestamp(
@@ -278,6 +286,8 @@ contract AkemonaERC20Perk is
         }
         // * security: burn caller's perk tokens before initiating the transfer
         _burn(msg.sender, amount);
+        // update burned tokens value
+        _totalBurn += amount;
 
         if (
             !usdcContract.transferFrom(_paymentWallet, msg.sender, amountToSend)
