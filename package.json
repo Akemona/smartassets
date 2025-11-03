@@ -1,40 +1,24 @@
 {
-  "name": "akemona-smartassets",
-  "version": "0.0.2",
-  "description": "Smart contracts developed by Akemona for the creation and management of tokenized securities under SEC regulations in the United States.",
-  "main": "index.js",
+  "name": "smartasset2",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
     "flatten": "hardhat flatten",
     "verify": "hardhat verify"
   },
-  "author": "akemona",
-  "license": "Unlicense",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ignition": "0.15.3",
-    "@nomicfoundation/hardhat-ignition-viem": "0.15.3",
-    "@nomicfoundation/hardhat-network-helpers": "1.0.10",
-    "@nomicfoundation/hardhat-toolbox": "5.0.0",
-    "@nomicfoundation/hardhat-toolbox-viem": "3.0.0",
-    "@nomicfoundation/hardhat-verify": "2.0.6",
-    "@nomicfoundation/hardhat-viem": "2.0.1",
-    "@nomicfoundation/ignition-core": "0.15.3",
-    "@openzeppelin/contracts": "5.0.2",
-    "@types/chai": "^4.3.14",
-    "@types/chai-as-promised": "^7.1.8",
-    "@types/mocha": "10.0.6",
-    "@types/node": "20.12.8",
-    "chai": "4.4.1",
-    "hardhat": "2.22.3",
-    "hardhat-gas-reporter": "2.1.1",
-    "solidity-coverage": "0.8.12",
-    "ts-node": "10.9.2",
-    "typescript": "5.4.5",
-    "viem": "2.10.3"
+    "@nomicfoundation/hardhat-ignition": "3.0.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.0",
+    "@nomicfoundation/hardhat-verify": "^3.0.4",
+    "@openzeppelin/contracts": "5.4.0",
+    "@types/node": "^22.19.0",
+    "dotenv": "17.2.3",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "3.0.10",
+    "typescript": "~5.8.3",
+    "viem": "2.38.6"
   },
-  "packageManager": "yarn@4.2.2",
-  "dependencies": {
-    "dotenv": "16.4.1"
-  }
+  "packageManager": "pnpm@10.20.0+sha512.cf9998222162dd85864d0a8102e7892e7ba4ceadebbf5a31f9c2fce48dfce317a9c53b9f6464d1ef9042cba2e02ae02a9f7c143a2b438cd93c91840f0192b9dd"
 }
