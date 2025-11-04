@@ -82,7 +82,7 @@ contract AkemonaMerkleDistributor is
      */
     function updatePaymentWallet(
         address _newWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         paymentWallet = _newWallet;
         emit PaymentWalletUpdated(_newWallet);
     }
