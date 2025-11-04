@@ -1,4 +1,4 @@
-# Akemona Contracts (`node:test` and `viem`)
+# Akemona Contracts
 
 ## Usage
 
