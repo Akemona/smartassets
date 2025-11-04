@@ -38,3 +38,7 @@ node_modules
 # solidity-coverage files
 /coverage
 /coverage.json
+
+# Remix IDE
+.deps
+.states
