@@ -2,140 +2,166 @@
 // Compatible with OpenZeppelin Contracts ^5.4.0
 pragma solidity ^0.8.27;
 
+import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {IAkemonaMerkleDistributor} from "./IAkemonaMerkleDistributor.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IAkemonaContractErrors} from "../interfaces/IAkemonaContractErrors.sol";
+import {
+    MerkleProof
+} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {IMintable} from "../interfaces/IMintable.sol";
 
-contract AkemonaMerkleDistributor is
-    Pausable,
-    AccessControl,
-    IAkemonaMerkleDistributor
-{
+/// @title AkemonaMerkleDistributor
+/// @author [Akemona](https://akemona.com)
+/// @notice A contract that allows a user to claim a token against a Merkle tree root.
+contract AkemonaMerkleDistributor is Pausable, AccessControl {
+    using BitMaps for BitMaps.BitMap;
+
+    /// @notice Pauser role.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    /// @dev The merkle root which will be used to verify claims
-    bytes32 public override merkleRoot;
+    /// @notice The Merkle root for the distribution.
+    bytes32 public immutable MERKLE_ROOT;
 
-    /// @dev wallet with tokens to claim
-    address public paymentWallet;
+    /// @notice The security/perk token contract for the tokens to be claimed.
+    IMintable public immutable TOKEN;
 
-    /// @dev Perk/Security Token contract
-    address public override token;
+    /// @notice This is the total amount of tokens that have been claimed so far.
+    uint256 public totalClaimed;
 
-    /// @dev This is a packed array of booleans.
-    mapping(uint256 => uint256) private claimedBitMap;
+    /// @notice The maximum number of tokens that may be claimed using the MerkleDistributor.
+    uint256 public immutable MAXIMUM_TOTAL_CLAIMABLE;
+
+    /// @notice This is a packed array of booleans for tracking completion of claims.
+    BitMaps.BitMap internal claimedBitMap;
+
+    /// @notice Event that is emitted whenever a call to claim succeeds.
+    /// @param index The index of the claim.
+    /// @param account The address that will receive the new tokens.
+    /// @param amount The quantity of tokens, in raw decimals, that will be created.
+    event Claimed(uint256 index, address indexed account, uint256 amount);
+
+    /// @notice Error thrown when the claim has already been claimed.
+    error AkemonaMerkleDistributor__AlreadyClaimed();
+
+    /// @notice Error for when the claim has an invalid proof.
+    error AkemonaMerkleDistributor__InvalidProof();
+
+    /// @notice Error for when the total claimed exceeds the maximum claimable amount.
+    error AkemonaMerkleDistributor__ClaimAmountExceedsMaximum();
+
+    /// @notice Error for when the sweep has already been done.
+    error AkemonaMerkleDistributor__SweepAlreadyDone();
 
     constructor(
-        address defaultAdmin,
-        address pauser,
-        address _token,
-        address _paymentWallet,
+        address _defaultAdmin,
+        address _pauser,
+        uint256 _maximumTotalClaimable,
+        IMintable _token,
         bytes32 _merkleRoot
     ) {
-        merkleRoot = _merkleRoot;
-        token = _token;
-        paymentWallet = _paymentWallet;
+        TOKEN = _token;
+        MERKLE_ROOT = _merkleRoot;
+        MAXIMUM_TOTAL_CLAIMABLE = _maximumTotalClaimable;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
-        _grantRole(PAUSER_ROLE, pauser);
+        _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        _grantRole(PAUSER_ROLE, _pauser);
     }
 
+    /// @notice Pauses the claim.
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
+    /// @notice Resume the contract/claim.
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    /**
-     * @dev Check if the user of the merkle index has claimed drops already.
-     * @param index - The merkle index
-     * @return true if it's claimed, otherwise false
-     */
-    function isClaimed(uint256 index) public view override returns (bool) {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        uint256 claimedWord = claimedBitMap[claimedWordIndex];
-        uint256 mask = (1 << claimedBitIndex);
-        return claimedWord & mask == mask;
+    /// @notice Returns true if the index has been claimed.
+    /// @param _index The index of the claim.
+    /// @return Whether a claim has been claimed.
+    function isClaimed(uint256 _index) public view returns (bool) {
+        return claimedBitMap.get(_index);
     }
 
-    /**
-     * @dev Marks that the user of the merkle index has claimed drops.
-     * @param index - The merkle index
-     */
-    function _setClaimed(uint256 index) private {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        claimedBitMap[claimedWordIndex] =
-            claimedBitMap[claimedWordIndex] |
-            (1 << claimedBitIndex);
-    }
-
-    /**
-     * @notice updates the payment wallet.
-     * @param _newWallet - Address that holds Ondo to transfer to the user
-     */
-    function updatePaymentWallet(
-        address _newWallet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
-        paymentWallet = _newWallet;
-        emit PaymentWalletUpdated(_newWallet);
-    }
-
-    /**
-     * @dev Allows users to claim tokens.
-     * It reverts when the user has already claimed or after terminated.
-     * index, account, amount, merkleProof - all these data has been used
-     * to contribute merkle tree, hence users must keep it securely and provide correct data
-     * or it will fail to claim.
-     *
-     * @param index       - The merkle index
-     * @param account     - The address of the user
-     * @param amount      - The amount to be distributed to the user
-     * @param merkleProof - The merkle proof
-     */
+    /// @notice Claims the tokens for a caller, given the index, amount, and merkle proof.
+    /// @param _index The index of the claim.
+    /// @param _amount The quantity of tokens, in raw decimals, that will be created.
+    /// @param _merkleProof The Merkle proof for the claim.
     function claim(
-        uint256 index,
-        address account,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    ) external override whenNotPaused {
-        require(msg.sender == account, "Can't claim another user's tokens");
-        require(!isClaimed(index), "Error: Drop already claimed.");
+        uint256 _index,
+        uint256 _amount,
+        bytes32[] calldata _merkleProof
+    ) external {
+        _claim(_index, msg.sender, _amount, _merkleProof);
+    }
+
+    /// @notice Allows the admin to sweep unclaimed tokens to a given address.
+    /// @param _unclaimedReceiver The address that will receive the unclaimed tokens.
+    function sweepUnclaimed(
+        address _unclaimedReceiver
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revertIfAlreadySwept();
+        TOKEN.mint(_unclaimedReceiver, MAXIMUM_TOTAL_CLAIMABLE - totalClaimed);
+        totalClaimed = MAXIMUM_TOTAL_CLAIMABLE;
+    }
+
+    /// @notice Claims the tokens for a given index, account, amount, and merkle proof.
+    /// @param _index The index of the claim.
+    /// @param _claimant The address that will receive the new tokens.
+    /// @param _amount The quantity of tokens, in raw decimals, that will be created.
+    /// @param _merkleProof The Merkle proof for the claim.
+    /// @dev Internal method for claiming tokens, called by 'claim'.
+    function _claim(
+        uint256 _index,
+        address _claimant,
+        uint256 _amount,
+        bytes32[] calldata _merkleProof
+    ) internal {
+        _revertIfClaimAmountExceedsMaximum(_amount);
+        _revertIfAlreadyClaimed(_index);
 
         // Verify the merkle proof.
-        bytes32 leaf = keccak256(
-            bytes.concat(keccak256(abi.encode(index, account, amount)))
+        bytes32 node = keccak256(
+            bytes.concat(keccak256(abi.encode(_index, _claimant, _amount)))
         );
+        if (!MerkleProof.verifyCalldata(_merkleProof, MERKLE_ROOT, node)) {
+            revert AkemonaMerkleDistributor__InvalidProof();
+        }
 
-        require(
-            MerkleProof.verify(merkleProof, merkleRoot, leaf),
-            "Error: Invalid proof."
-        );
-        /*  
-         - removed to reduce gas cost, transfer will fail automatically if allowance is not enough
-        uint256 currentAllowance = IERC20(token).allowance(
-                paymentWallet,
-                address(this)
-            );
-            if (currentAllowance < amount) {
-                revert IAkemonaContractErrors.AkemonaNotEnoughAllowance(
-                    amount,
-                    currentAllowance
-                );
-            } 
-        */
+        // Bump the total amount claimed, mark it claimed, mint the token, and emit Claimed event.
+        totalClaimed += _amount;
+        _setClaimed(_index);
+        TOKEN.mint(_claimant, _amount);
+        emit Claimed(_index, _claimant, _amount);
+    }
 
-        // Mark address as claimed
-        _setClaimed(index);
+    /// @notice marks the given index as claimed.
+    /// @param _index The index of the claim.
+    function _setClaimed(uint256 _index) private {
+        claimedBitMap.set(_index);
+    }
 
-        IERC20(token).transferFrom(paymentWallet, account, amount);
+    /// @notice Reverts if the claim amount exceeds the maximum.
+    /// @param _amount The quantity of tokens, in raw decimals, that will be created.
+    function _revertIfClaimAmountExceedsMaximum(uint256 _amount) internal view {
+        if (_amount + totalClaimed > MAXIMUM_TOTAL_CLAIMABLE) {
+            revert AkemonaMerkleDistributor__ClaimAmountExceedsMaximum();
+        }
+    }
 
-        emit Claimed(index, account, amount);
+    /// @notice Reverts if already claimed.
+    /// @param _index The index of the claim.
+    function _revertIfAlreadyClaimed(uint256 _index) internal view {
+        if (isClaimed(_index)) {
+            revert AkemonaMerkleDistributor__AlreadyClaimed();
+        }
+    }
+
+    /// @notice Reverts if the sweep has already been done.
+    function _revertIfAlreadySwept() internal view {
+        if (totalClaimed >= MAXIMUM_TOTAL_CLAIMABLE) {
+            revert AkemonaMerkleDistributor__SweepAlreadyDone();
+        }
     }
 }

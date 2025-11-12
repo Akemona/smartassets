@@ -1,0 +1,18 @@
+minimumReleaseAge: 1440
+
+trustPolicy: "no-downgrade"
+
+# minimumReleaseAgeExclude:
+#   - '@angular/*'
+
+ignoredBuiltDependencies:
+  - "@parcel/watcher"
+  - bufferutil
+  - keccak
+  - lmdb
+  - msgpackr-extract
+  - utf-8-validate
+
+onlyBuiltDependencies:
+  - "@tailwindcss/oxide"
+  - esbuild

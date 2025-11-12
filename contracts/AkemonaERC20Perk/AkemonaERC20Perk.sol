@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
-import "../interfaces/IAkemonaContractErrors.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {
+    ERC20Pausable
+} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import {
+    AccessControlDefaultAdminRules
+} from "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
+import {IAkemonaContractErrors} from "../interfaces/IAkemonaContractErrors.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract AkemonaERC20Perk is
