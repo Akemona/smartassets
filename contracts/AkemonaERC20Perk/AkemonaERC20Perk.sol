@@ -5,21 +5,26 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {
     ERC20Pausable
 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import {
-    AccessControlDefaultAdminRules
-} from "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+
 import {IAkemonaContractErrors} from "../interfaces/IAkemonaContractErrors.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @title AkemonaERC20Perk
+/// @author [Akemona](https://akemona.com)
+/// @notice A Perk token contract with redeem support.
 contract AkemonaERC20Perk is
     ERC20,
     ERC20Pausable,
-    AccessControlDefaultAdminRules,
+    AccessControl,
     IAkemonaContractErrors
 {
+    /// @notice Pauser role.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice Minter role.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    uint private constant MAX_BATCH_SIZE = 255;
+    /// @notice Max batch size for call.
+    uint256 private constant MAX_BATCH_SIZE = 255;
 
     // max supply
     uint256 private _maxSupply;
@@ -47,7 +52,7 @@ contract AkemonaERC20Perk is
         uint256 tokensPerDollar_,
         address usdc_,
         address paymentWallet_
-    ) ERC20(name_, symbol_) AccessControlDefaultAdminRules(3 days, msg.sender) {
+    ) ERC20(name_, symbol_) {
         _maxSupply = maxSupply_;
         _usdc = usdc_;
         _paymentWallet = paymentWallet_;
@@ -58,10 +63,12 @@ contract AkemonaERC20Perk is
         _grantRole(MINTER_ROLE, msg.sender);
     }
 
+    /// @notice Pauses the claim.
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
+    /// @notice Resume the contract/claim.
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
@@ -84,7 +91,7 @@ contract AkemonaERC20Perk is
     }
 
     /**
-     * @dev Adds new verified addresses (admin only)
+     * @notice Adds new verified addresses (admin only)
      *
      * Requirements:
      *
