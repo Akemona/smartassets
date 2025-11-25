@@ -1,21 +1,30 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
-import "../interfaces/IAkemonaContractErrors.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {
+    ERC20Pausable
+} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+
+import {IAkemonaContractErrors} from "../interfaces/IAkemonaContractErrors.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/// @title AkemonaERC20Perk
+/// @author [Akemona](https://akemona.com)
+/// @notice A Perk token contract with redeem support.
 contract AkemonaERC20Perk is
     ERC20,
     ERC20Pausable,
-    AccessControlDefaultAdminRules,
+    AccessControl,
     IAkemonaContractErrors
 {
+    /// @notice Pauser role.
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    /// @notice Minter role.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    uint private constant MAX_BATCH_SIZE = 255;
+    /// @notice Max batch size for call.
+    uint256 private constant MAX_BATCH_SIZE = 255;
 
     // max supply
     uint256 private _maxSupply;
@@ -23,6 +32,7 @@ contract AkemonaERC20Perk is
 
     address private _usdc;
     address private _paymentWallet;
+    uint256 private _totalBurn;
     IERC20 private usdcContract;
 
     // mapping of wallet address to last verified unix timestamp
@@ -42,7 +52,7 @@ contract AkemonaERC20Perk is
         uint256 tokensPerDollar_,
         address usdc_,
         address paymentWallet_
-    ) ERC20(name_, symbol_) AccessControlDefaultAdminRules(3 days, msg.sender) {
+    ) ERC20(name_, symbol_) {
         _maxSupply = maxSupply_;
         _usdc = usdc_;
         _paymentWallet = paymentWallet_;
@@ -53,16 +63,25 @@ contract AkemonaERC20Perk is
         _grantRole(MINTER_ROLE, msg.sender);
     }
 
+    /// @notice Pauses the claim.
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
+    /// @notice Resume the contract/claim.
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
     function decimals() public view virtual override returns (uint8) {
         return 6;
+    }
+
+    /**
+     * @dev Total number of burned/redeemed tokens
+     */
+    function totalBurn() public view virtual returns (uint256) {
+        return _totalBurn;
     }
 
     function getWhitelistedTimestamp(
@@ -72,7 +91,7 @@ contract AkemonaERC20Perk is
     }
 
     /**
-     * @dev Adds new verified addresses (admin only)
+     * @notice Adds new verified addresses (admin only)
      *
      * Requirements:
      *
@@ -207,6 +226,11 @@ contract AkemonaERC20Perk is
         _addWhitelistAddresses(toAddresses);
     }
 
+    /**
+     * @dev mints new perk tokens
+     * @param to to address
+     * @param amount number of tokens
+     */
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         require(ERC20.totalSupply() + amount <= _maxSupply, "Out of stock");
         if (amount == 0) {
@@ -215,6 +239,20 @@ contract AkemonaERC20Perk is
             revert AkemonaInvalidAddress(address(0));
         }
         _mint(to, amount);
+    }
+
+    /**
+     * @dev updates the payment wallet
+     * @param newAddress to address
+     */
+    function updatePaymentWallet(
+        address newAddress
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        if (newAddress == address(0)) {
+            revert AkemonaInvalidAddress(address(0));
+        }
+        _paymentWallet = newAddress;
+        return true;
     }
 
     /**
@@ -259,6 +297,8 @@ contract AkemonaERC20Perk is
         }
         // * security: burn caller's perk tokens before initiating the transfer
         _burn(msg.sender, amount);
+        // update burned tokens value
+        _totalBurn += amount;
 
         if (
             !usdcContract.transferFrom(_paymentWallet, msg.sender, amountToSend)

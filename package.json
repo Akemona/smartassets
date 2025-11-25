@@ -1,40 +1,26 @@
 {
-  "name": "akemona-smartassets",
-  "version": "0.0.2",
-  "description": "Smart contracts developed by Akemona for the creation and management of tokenized securities under SEC regulations in the United States.",
-  "main": "index.js",
+  "name": "smartasset2",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
     "flatten": "hardhat flatten",
-    "verify": "hardhat verify"
+    "verify": "hardhat verify",
+    "lint": "solhint 'contracts/**/*.sol'"
   },
-  "author": "akemona",
-  "license": "Unlicense",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ignition": "0.15.0",
-    "@nomicfoundation/hardhat-ignition-viem": "0.15.0",
-    "@nomicfoundation/hardhat-network-helpers": "1.0.10",
-    "@nomicfoundation/hardhat-toolbox": "5.0.0",
-    "@nomicfoundation/hardhat-toolbox-viem": "3.0.0",
-    "@nomicfoundation/hardhat-verify": "2.0.5",
-    "@nomicfoundation/hardhat-viem": "2.0.0",
-    "@nomicfoundation/ignition-core": "0.15.0",
-    "@openzeppelin/contracts": "5.0.2",
-    "@types/chai": "^4.3.14",
-    "@types/chai-as-promised": "^7.1.8",
-    "@types/mocha": "10.0.6",
-    "@types/node": "20.12.2",
-    "chai": "4.4.1",
-    "hardhat": "2.22.2",
-    "hardhat-gas-reporter": "2.0.2",
-    "solidity-coverage": "0.8.11",
-    "ts-node": "10.9.2",
-    "typescript": "~5.4.3",
-    "viem": "2.9.6"
+    "@nomicfoundation/hardhat-ignition": "3.0.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.0",
+    "@nomicfoundation/hardhat-verify": "^3.0.4",
+    "@openzeppelin/contracts": "5.4.0",
+    "@types/node": "^22.19.0",
+    "dotenv": "17.2.3",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "3.0.10",
+    "typescript": "~5.8.3",
+    "viem": "2.38.6"
   },
-  "packageManager": "yarn@4.1.0",
-  "dependencies": {
-    "dotenv": "16.4.1"
-  }
+  "packageManager": "pnpm@10.21.0+sha512.da3337267e400fdd3d479a6c68079ac6db01d8ca4f67572083e722775a796788a7a9956613749e000fac20d424b594f7a791a5f4e2e13581c5ef947f26968a40"
 }
